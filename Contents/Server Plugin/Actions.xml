@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- Copyright (C)2017 Eric Vickery. -->
+<Actions>
+	<!--Action id="send" deviceFilter="indigo.device,self.ARDUINO_RELAY">
+		<Name>Send Value</Name>
+		<CallbackMethod>send</CallbackMethod>
+		<ConfigUI>
+			<Field id="valuelabel" type="label">
+				<Label>Preferred value is an integer due to limited memory!</Label>
+			</Field>
+            <Field id="value" type="textfield">
+                <Label>Value:</Label>
+            </Field>
+		</ConfigUI>
+	</Action-->
+    <!--Action id="send" deviceFilter="indigo.device,self">
+		<Name>Request Full Status Update</Name>
+		<CallbackMethod>sendUpdateRequest</CallbackMethod>
+	</Action-->
+</Actions>

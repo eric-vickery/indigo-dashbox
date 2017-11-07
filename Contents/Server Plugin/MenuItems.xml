@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!-- Copyright (C)2017 Eric Vickery. -->
+<MenuItems>
+    <MenuItem id="reloadMenu">
+		<Name>Reload devices</Name>
+        <CallbackMethod>reloadDevices</CallbackMethod>
+	</MenuItem>
+</MenuItems>
