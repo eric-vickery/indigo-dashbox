@@ -2,11 +2,18 @@
 # -*- coding: utf-8 -*-
 
 ####################
-# MySensors plugin interface for Indigo 6
+# Brultech Dashbox plugin interface for Indigo 7
 #
-# Copyright (c)2014-2015 Marcel Trapman.
+# Copyright (c)2017 Eric Vickery.
 ####################
-import httplib, urllib, sys, os, threading, glob, time
+import httplib
+import urllib
+import sys
+import os
+import threading
+import glob
+import time
+import pg8000
 
 kOnlineState = "online"
 kOfflineState = "offline"
