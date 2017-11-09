@@ -11,7 +11,8 @@ Please report issues through Github.
 ### Installation instructions
 1. Download the (zip archive of the) plugin [here](https://github.com/eric-vickery/indigo-dashbox/releases)
 2. Install [pg8000](https://github.com/mfenniak/pg8000) by typing the command `pip install pg8000` in a terminal.
-3. Follow the Indigo [plugin installation instructions](http://wiki.indigodomo.com/doku.php?id=indigo_7_documentation:getting_started#installing_plugins_configuring_plugin_settings_permanently_removing_plugins)
+3. Install [requests](http://docs.python-requests.org/en/master/) by typing the command `pip install requests` in a terminal.
+4. Follow the Indigo [plugin installation instructions](http://wiki.indigodomo.com/doku.php?id=indigo_7_documentation:getting_started#installing_plugins_configuring_plugin_settings_permanently_removing_plugins)
 
 When you have Indigo installed the plugin folder will show as a single file (a package).
 When you doubleclick on the file you will automatically open Indigo (or bring it to the front) and you will be asked if you want to install and enable it.
