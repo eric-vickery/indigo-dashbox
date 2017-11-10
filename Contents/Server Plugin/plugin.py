@@ -17,22 +17,26 @@ import requests
 kOnlineState = "online"
 kOfflineState = "offline"
 
-# parser = HTMLParser()
-# conn = pg8000.connect(user="dbbackup", password="universe", database="brultech_dash", host="dashbox.vickeryranch.com")
-# cursor = conn.cursor()
-# cursor.execute("SELECT channel_id, channel_name, pulse_unit, chnum, ctype, devices.device_id, netchannel_id FROM channel INNER JOIN devices ON channel.device_id = devices.device_id WHERE hide = 0 ORDER BY channel_id ASC")
-# results = cursor.fetchall()
-# for row in results:
-# 	channel_id, channel_name, pulse_unit, chnum, cttype, device_id, netchannel_id = row
-# 	print("id = %d, name = %s, Type = %d" % (channel_id, parser.unescape(channel_name), row[4]))
-# print(results)
-# cursor.close()
-# conn.close()
+device_dict = {}
+parser = HTMLParser()
+conn = pg8000.connect(user="dbbackup", password="universe", database="brultech_dash", host="dashbox.vickeryranch.com")
+cursor = conn.cursor()
+cursor.execute("SELECT channel_id, channel_name, pulse_unit, chnum, ctype, devices.device_id, netchannel_id FROM channel INNER JOIN devices ON channel.device_id = devices.device_id WHERE hide = 0 ORDER BY channel_id ASC")
+results = cursor.fetchall()
+for row in results:
+	device_dict[channel_id] = 
+	channel_id, channel_name, pulse_unit, chnum, cttype, device_id, netchannel_id = row
+	print("id = %d, name = %s, Type = %d" % (channel_id, parser.unescape(channel_name), row[4]))
+print(results)
+cursor.close()
+conn.close()
+
 result = requests.get("http://dashbox.vickeryranch.com/index.php/pages/search/all/0")
 print result.json()["channels"]
 
 result = requests.get("http://dashbox.vickeryranch.com/index.php/pages/search/getWattVals")
 power_data = result.json()
+
 for device in power_data:
 	print device
 	for reading in power_data[device]["watts"]:
