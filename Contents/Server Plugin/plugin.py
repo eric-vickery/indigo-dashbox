@@ -17,30 +17,54 @@ import requests
 kOnlineState = "online"
 kOfflineState = "offline"
 
-device_dict = {}
+kChannelTypeToDeviceType =
+{
+	0: "powerMeterDevice",
+	1: "temperatureSensorDevice",
+	2: "pulseSensorDevice"
+	3: "voltageSensorDevice"
+}
+
 parser = HTMLParser()
 conn = pg8000.connect(user="dbbackup", password="universe", database="brultech_dash", host="dashbox.vickeryranch.com")
 cursor = conn.cursor()
 cursor.execute("SELECT channel_id, channel_name, pulse_unit, chnum, ctype, devices.device_id, netchannel_id FROM channel INNER JOIN devices ON channel.device_id = devices.device_id WHERE hide = 0 ORDER BY channel_id ASC")
 results = cursor.fetchall()
+device_dict = {}
 for row in results:
-	device_dict[channel_id] = 
-	channel_id, channel_name, pulse_unit, chnum, cttype, device_id, netchannel_id = row
-	print("id = %d, name = %s, Type = %d" % (channel_id, parser.unescape(channel_name), row[4]))
-print(results)
+	channel_id, channel_name, pulse_unit, chnum, ctype, device_id, netchannel_id = row
+	device_dict[channel_id] = {}
+	device_dict[channel_id]["channelName"] = parser.unescape(channel_name)
+	device_dict[channel_id]["pulseUnit"] = pulse_unit
+	device_dict[channel_id]["channelNumber"] = chnum
+	device_dict[channel_id]["channelType"] = ctype
+	device_dict[channel_id]["deviceId"] = device_id
+	device_dict[channel_id]["netchannelId"] = netchannel_id
+	# print("id = %d, name = %s, Type = %d" % (channel_id, parser.unescape(channel_name), row[4]))
+# print(results)
+# print device_dict
 cursor.close()
 conn.close()
 
 result = requests.get("http://dashbox.vickeryranch.com/index.php/pages/search/all/0")
-print result.json()["channels"]
+# print result.json()["channels"]
+active_channels = result.json()["channels"]
 
 result = requests.get("http://dashbox.vickeryranch.com/index.php/pages/search/getWattVals")
 power_data = result.json()
 
+index = 0
 for device in power_data:
-	print device
+	# print device
 	for reading in power_data[device]["watts"]:
-		print reading
+		device_dict[int(active_channels[index])]["sensorReading"] = reading
+		index += 1
+		# print reading
+
+for device in device_dict.values():
+	print("%s = %s" % (device["channelName"], device["sensorReading"]))
+
+# print device_dict
 
 
 class Plugin(indigo.PluginBase):
@@ -163,21 +187,45 @@ class Plugin(indigo.PluginBase):
 		return device_list
 
 	def addIndigoDevices(self, valuesDict, deviceIdList):
-		try:
-			nodeId = kNoneNodeId
+		# First remove all the devices we have added
+		removeAllDevices(self, valuesDict, deviceIdList)
 
+		# Now go find all the active channels on the Dashbox and add them
+		parser = HTMLParser()
+		conn = pg8000.connect(user="dbbackup", password="universe", database="brultech_dash", host="dashbox.vickeryranch.com")
+		cursor = conn.cursor()
+		cursor.execute("SELECT channel_id, channel_name, pulse_unit, chnum, ctype, devices.device_id, netchannel_id FROM channel INNER JOIN devices ON channel.device_id = devices.device_id WHERE hide = 0 ORDER BY channel_id ASC")
+		results = cursor.fetchall()
+		device_dict = {}
+		for row in results:
+			channel_id, channel_name, pulse_unit, chnum, ctype, device_id, netchannel_id = row
+			deviceType = kChannelTypeToDeviceType[ctype]
+
+			newdev = indigo.device.create(indigo.kProtocol.Plugin, deviceTypeId=deviceType)
+			newdev.model = "Dashbox Channel"
+			newdev.subModel = parser.unescape(channel_name)
+			# newDev
+
+			device_dict["channelId"] = channel_id
+			device_dict["channelName"] = parser.unescape(channel_name)
+			device_dict["pulseUnit"] = pulse_unit
+			device_dict["channelNumber"] = chnum
+			device_dict["channelType"] = ctype
+			device_dict["deviceId"] = device_id
+			device_dict["netchannelId"] = netchannel_id
+			newdev.pluginProps = device_dict
+			newdev.replaceOnServer()
+		cursor.close()
+		conn.close()
+
+		return valuesDict
+
+	def removeAllDevices(self, valuesDict, devIdList):
+		for devId in devIdList:
 			try:
-				nodeId = int(valuesDict["selecteddevice"])
-
-				self.debugLog(u"add device %s" % nodeId)
-			except Exception, (ErrorMessage):
-				pass
-
-			if nodeId > kNoneNodeId:
-				self.addIndigoChildren(nodeId)
-		except Exception, (ErrorMessage):
-			pass
-
+				indigo.device.delete(devId)
+			except:
+				pass  # delete doesn't allow (throws) on root elem
 		return valuesDict
 
 	def getDeviceFactoryUiValues(self, devIdList):
