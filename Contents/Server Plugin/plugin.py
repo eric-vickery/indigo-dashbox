@@ -59,6 +59,28 @@ kChannelTypeToDeviceType = {
 # cursor.close()
 # conn.close()
 
+# key = None
+# totalDailyUsage = 0.0
+# result = requests.post("http://dashbox.vickeryranch.com/index.php/pages/load/loadBarGraph", data={'chans': '2161,-1,-1'})
+# if result.status_code == requests.codes.ok:
+# 	# print result.json()
+# 	usage = result.json()
+# 	for usageRecord in usage:
+# 		if key is None:
+# 			for keyIndex in usageRecord:
+# 				if keyIndex != "date":
+# 					key = keyIndex
+# 		# print usageRecord
+# 		hourlyUsage = 0.0
+# 		try:
+# 			hourlyUsage = usageRecord[key]
+# 		except:
+# 			pass
+# 		totalDailyUsage += hourlyUsage
+# 	print totalDailyUsage
+# else:
+# 	print result.status_code
+
 # result = requests.get("http://dashbox.vickeryranch.com/index.php/pages/search/all/0")
 # print result.json()["channels"]
 # active_channels = result.json()["channels"]
@@ -132,6 +154,31 @@ class Plugin(indigo.PluginBase):
 
 		return indexedPowerData
 
+	def getDailyUsage(self, channelId):
+		host = self.pluginPrefs["address"]
+		if host is None or host == "":
+			return 0.0
+
+		key = None
+		totalDailyUsage = 0.0
+		result = requests.post("http://" + host + "/index.php/pages/load/loadBarGraph", data={"chans": "%s,-1,-1" % (channelId)})
+		if result.status_code == requests.codes.ok:
+			usage = result.json()
+			for usageRecord in usage:
+				if key is None:
+					for keyIndex in usageRecord:
+						if keyIndex != "date":
+							key = keyIndex
+				hourlyUsage = 0.0
+				try:
+					hourlyUsage = usageRecord[key]
+				except:
+					pass
+				totalDailyUsage += hourlyUsage
+			return totalDailyUsage
+		else:
+			return 0.0
+
 	def refreshDeviceFromData(self, dev, powerData, logRefresh):
 
 		keyValueList = []
@@ -160,19 +207,18 @@ class Plugin(indigo.PluginBase):
 
 		elif dev.deviceTypeId == kPowerMeterDevice:
 			if "curEnergyLevel" in dev.states:
-				simulateWatts = int(powerData[dev.pluginProps[kChannelId]])
-				simulateWattsStr = "%d W" % (simulateWatts)
+				watts = int(powerData[dev.pluginProps[kChannelId]])
+				wattsStr = "%d W" % (simulateWatts)
 				if logRefresh:
-					indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "power load", simulateWattsStr))
-				keyValueList.append({'key': 'curEnergyLevel', 'value': simulateWatts, 'uiValue': simulateWattsStr})
+					indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "power load", wattsStr))
+				keyValueList.append({'key': 'curEnergyLevel', 'value': watts, 'uiValue': wattsStr})
 
-			# TODO Figure out how to get the kWh for the current device
-			# if "accumEnergyTotal" in dev.states:
-			# 	simulateKwh = dev.states.get("accumEnergyTotal", 0) + 0.001
-			# 	simulateKwhStr = "%.3f kWh" % (simulateKwh)
-			# 	if logRefresh:
-			# 		indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "energy total", simulateKwhStr))
-			# 	keyValueList.append({'key': 'accumEnergyTotal', 'value': simulateKwh, 'uiValue': simulateKwhStr})
+			if "accumEnergyTotal" in dev.states:
+				dailyKwh = self.getDailyUsage(dev.pluginProps[kChannelId])
+				dailyKwhStr = "%.3f kWh" % (simulateKwh)
+				if logRefresh:
+					indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "energy total", dailyKwhStr))
+				keyValueList.append({'key': 'accumEnergyTotal', 'value': dailyKwh, 'uiValue': dailyKwhStr})
 
 		dev.updateStatesOnServer(keyValueList)
 
