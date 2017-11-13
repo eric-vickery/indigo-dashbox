@@ -50,23 +50,18 @@
 			<Field id="subModel" type="textfield" defaultValue="">
 				<Label>Optional Sub Model Name :</Label>
 			</Field>
-			<Field id="SupportsOnState" type="checkbox" defaultValue="false", hidden="true">
+			<Field id="SupportsOnState" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
-			<Field id="SupportsSensorValue" type="checkbox" defaultValue="true", hidden="true">
+			<Field id="SupportsSensorValue" type="checkbox" defaultValue="true" hidden="true">
 			</Field>
-			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false", hidden="true">
+			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
-			<Field id="AllowOnStateChange" type="checkbox" defaultValue="false", hidden="true">
+			<Field id="AllowOnStateChange" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
-			<Field id="AllowSensorValueChange" type="checkbox" hidden="true" defaultValue="false">
+			<Field id="AllowSensorValueChange" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
 		</ConfigUI>
 		<States>
-			<!-- By default sensor type devices automatically inherit:
-
-				onOffState state IF property SupportsOnState is True
-				sensorValue state IF property SupportsSensorValue is True
-			-->
 		</States>
 	</Device>
 	<Device type="sensor" id="voltageSensorDevice">
@@ -75,23 +70,18 @@
 			<Field id="subModel" type="textfield" defaultValue="">
 				<Label>Optional Sub Model Name :</Label>
 			</Field>
-			<Field id="SupportsOnState" type="checkbox" defaultValue="false", hidden="true">
+			<Field id="SupportsOnState" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
-			<Field id="SupportsSensorValue" type="checkbox" defaultValue="true", hidden="true">
+			<Field id="SupportsSensorValue" type="checkbox" defaultValue="true" hidden="true">
 			</Field>
-			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false", hidden="true">
+			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
-			<Field id="AllowOnStateChange" type="checkbox" defaultValue="false", hidden="true">
+			<Field id="AllowOnStateChange" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
-			<Field id="AllowSensorValueChange" type="checkbox" hidden="true" defaultValue="false">
+			<Field id="AllowSensorValueChange" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
 		</ConfigUI>
 		<States>
-			<!-- By default sensor type devices automatically inherit:
-
-				onOffState state IF property SupportsOnState is True
-				sensorValue state IF property SupportsSensorValue is True
-			-->
 		</States>
 	</Device>
 	<Device type="sensor" id="pulseSensorDevice">
@@ -100,23 +90,18 @@
 			<Field id="subModel" type="textfield" defaultValue="">
 				<Label>Optional Sub Model Name :</Label>
 			</Field>
-			<Field id="SupportsOnState" type="checkbox" defaultValue="false", hidden="true">
+			<Field id="SupportsOnState" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
-			<Field id="SupportsSensorValue" type="checkbox" defaultValue="true", hidden="true">
+			<Field id="SupportsSensorValue" type="checkbox" defaultValue="true" hidden="true">
 			</Field>
-			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false", hidden="true">
+			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
-			<Field id="AllowOnStateChange" type="checkbox" defaultValue="false", hidden="true">
+			<Field id="AllowOnStateChange" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
-			<Field id="AllowSensorValueChange" type="checkbox" hidden="true" defaultValue="false">
+			<Field id="AllowSensorValueChange" type="checkbox" defaultValue="false" hidden="true">
 			</Field>
 		</ConfigUI>
 		<States>
-			<!-- By default sensor type devices automatically inherit:
-
-				onOffState state IF property SupportsOnState is True
-				sensorValue state IF property SupportsSensorValue is True
-			-->
 		</States>
 	</Device>
 </Devices>
