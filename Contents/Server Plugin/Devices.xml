@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<!-- Copyright (C)2017 Eric Vickery. -->
+<Devices>
+	<DeviceFactory>
+		<Name>Define Device Group...</Name>
+		<ButtonTitle>Close</ButtonTitle>
+		<ConfigUI>
+			<Field type="list" id="devicegrouplist">
+				<Label>Device group:</Label>
+				<List class="self" method="getDeviceGroupList" dynamicReload="true" />
+			</Field>
+			<Field type="button" id="adddevices">
+				<Title>Add Devices</Title>
+				<CallbackMethod>addIndigoDevices</CallbackMethod>
+			</Field>
+		</ConfigUI>
+	</DeviceFactory>
+	<Device type="custom" id="powerMeterDevice">
+		<Name>Power Meter</Name>
+		<ConfigUI>
+			<!-- This hidden field forces property SupportsEnergyMeter to True
+			which enables the energy meter states and UI.
+			-->
+			<Field type="checkbox" id="SupportsEnergyMeter" defaultValue="true" hidden="true" />
+
+			<Field type="checkbox" id="SupportsEnergyMeterCurPower" defaultValue="true" hidden="true">
+				<Label>Supports power load:</Label>
+				<Description>Show current power load (Watts) in UI</Description>
+			</Field>
+		</ConfigUI>
+		<States>
+			<!--
+			Because the device above sets the SupportsEnergyMeter property
+			to true, the device will automatically inherit the states:
+
+				accumEnergyTotal (kWh)
+				curEnergyLevel (W)		- only exists SupportsEnergyMeterCurPower is True 
+	
+			The plugin can specify additional custom states and custom
+			actions (in Actions.xml) to modify custom states. As an example
+			here, we define a new custom state, backlightBrightness, which
+			is used to control the brightness of the backlit display of
+			the module.
+			-->
+		</States>
+	</Device>
+	<Device type="sensor" id="temperatureSensorDevice">
+		<Name>Temperature Sensor</Name>
+		<ConfigUI>
+			<Field id="subModel" type="textfield" defaultValue="">
+				<Label>Optional Sub Model Name :</Label>
+			</Field>
+			<Field id="SupportsOnState" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+			<Field id="SupportsSensorValue" type="checkbox" defaultValue="true" hidden="true">
+			</Field>
+			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+			<Field id="AllowOnStateChange" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+			<Field id="AllowSensorValueChange" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+		</ConfigUI>
+		<States>
+		</States>
+	</Device>
+	<Device type="sensor" id="voltageSensorDevice">
+		<Name>Voltage Sensor</Name>
+		<ConfigUI>
+			<Field id="subModel" type="textfield" defaultValue="">
+				<Label>Optional Sub Model Name :</Label>
+			</Field>
+			<Field id="SupportsOnState" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+			<Field id="SupportsSensorValue" type="checkbox" defaultValue="true" hidden="true">
+			</Field>
+			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+			<Field id="AllowOnStateChange" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+			<Field id="AllowSensorValueChange" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+		</ConfigUI>
+		<States>
+		</States>
+	</Device>
+	<Device type="sensor" id="pulseSensorDevice">
+		<Name>Pulse Counter</Name>
+		<ConfigUI>
+			<Field id="subModel" type="textfield" defaultValue="">
+				<Label>Optional Sub Model Name :</Label>
+			</Field>
+			<Field id="SupportsOnState" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+			<Field id="SupportsSensorValue" type="checkbox" defaultValue="true" hidden="true">
+			</Field>
+			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+			<Field id="AllowOnStateChange" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+			<Field id="AllowSensorValueChange" type="checkbox" defaultValue="false" hidden="true">
+			</Field>
+		</ConfigUI>
+		<States>
+		</States>
+	</Device>
+</Devices>

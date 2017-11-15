@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- Copyright (C)2017 Eric Vickery. -->
+<PluginConfig>
+	<Field id="toplabel" type="label">
+		<Label>With this plugin you can get power, pulse and temperature data from a Brultech Dashbox.</Label>
+	</Field>
+	<Field id="address" type="textfield">
+		<Label>Hostname or IP Address:</Label>
+	</Field>
+	<Field id="password" type="textfield">
+		<Label>Database backup password:</Label>
+	</Field>
+	<Field id="copyrightlabel" type="label" fontSize="small" fontColor="darkgray">
+		<Label>Copyright ©2017 Eric Vickery.</Label>
+	</Field>
+</PluginConfig>

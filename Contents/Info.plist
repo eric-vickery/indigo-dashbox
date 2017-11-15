@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PluginVersion</key>
+	<string>1.0.0</string>
+	<key>ServerApiVersion</key>
+	<string>2.0</string>
+	<key>CFBundleDisplayName</key>
+	<string>Brultech Dashbox</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.ev.indigo.dashbox</string>
+	<key>CFBundleVersion</key>
+	<string>1.0.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>http://www.serenitymountainranch.com/indigo/dashbox</string>
+		</dict>
+	</array>
+</dict>
+</plist>
