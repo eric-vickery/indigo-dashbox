@@ -38,69 +38,6 @@ kChannelTypeToDeviceType = {
 	3: kVoltageDevice
 }
 
-# parser = HTMLParser()
-# conn = pg8000.connect(user="dbbackup", password="universe", database="brultech_dash", host="dashbox.vickeryranch.com")
-# cursor = conn.cursor()
-# cursor.execute("SELECT channel_id, channel_name, pulse_unit, chnum, ctype, devices.device_id, netchannel_id FROM channel INNER JOIN devices ON channel.device_id = devices.device_id WHERE hide = 0 ORDER BY channel_id ASC")
-# results = cursor.fetchall()
-# device_dict = {}
-# for row in results:
-# 	channel_id, channel_name, pulse_unit, chnum, ctype, device_id, netchannel_id = row
-# 	device_dict[channel_id] = {}
-# 	device_dict[channel_id]["channelName"] = parser.unescape(channel_name)
-# 	device_dict[channel_id]["pulseUnit"] = pulse_unit
-# 	device_dict[channel_id]["channelNumber"] = chnum
-# 	device_dict[channel_id]["channelType"] = ctype
-# 	device_dict[channel_id]["deviceId"] = device_id
-# 	device_dict[channel_id]["netchannelId"] = netchannel_id
-	# print("id = %d, name = %s, Type = %d" % (channel_id, parser.unescape(channel_name), row[4]))
-# print(results)
-# print device_dict
-# cursor.close()
-# conn.close()
-
-# key = None
-# totalDailyUsage = 0.0
-# result = requests.post("http://dashbox.vickeryranch.com/index.php/pages/load/loadBarGraph", data={'chans': '2161,-1,-1'})
-# if result.status_code == requests.codes.ok:
-# 	# print result.json()
-# 	usage = result.json()
-# 	for usageRecord in usage:
-# 		if key is None:
-# 			for keyIndex in usageRecord:
-# 				if keyIndex != "date":
-# 					key = keyIndex
-# 		# print usageRecord
-# 		hourlyUsage = 0.0
-# 		try:
-# 			hourlyUsage = usageRecord[key]
-# 		except:
-# 			pass
-# 		totalDailyUsage += hourlyUsage
-# 	print totalDailyUsage
-# else:
-# 	print result.status_code
-
-# result = requests.get("http://dashbox.vickeryranch.com/index.php/pages/search/all/0")
-# print result.json()["channels"]
-# active_channels = result.json()["channels"]
-
-# result = requests.get("http://dashbox.vickeryranch.com/index.php/pages/search/getWattVals")
-# power_data = result.json()
-# print power_data
-# index = 0
-# for device in power_data:
-# 	# print device
-# 	for reading in power_data[device]["watts"]:
-# 		device_dict[int(active_channels[index])]["sensorReading"] = reading
-# 		index += 1
-# 		# print reading
-
-# for device in device_dict.values():
-# 	print("%s = %s" % (device["channelName"], device["sensorReading"]))
-
-# print device_dict
-
 
 class Plugin(indigo.PluginBase):
 
@@ -208,14 +145,14 @@ class Plugin(indigo.PluginBase):
 		elif dev.deviceTypeId == kPowerMeterDevice:
 			if "curEnergyLevel" in dev.states:
 				watts = int(powerData[dev.pluginProps[kChannelId]])
-				wattsStr = "%d W" % (simulateWatts)
+				wattsStr = "%d W" % (watts)
 				if logRefresh:
 					indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "power load", wattsStr))
 				keyValueList.append({'key': 'curEnergyLevel', 'value': watts, 'uiValue': wattsStr})
 
 			if "accumEnergyTotal" in dev.states:
 				dailyKwh = self.getDailyUsage(dev.pluginProps[kChannelId])
-				dailyKwhStr = "%.3f kWh" % (simulateKwh)
+				dailyKwhStr = "%.3f kWh" % (dailyKwh)
 				if logRefresh:
 					indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "energy total", dailyKwhStr))
 				keyValueList.append({'key': 'accumEnergyTotal', 'value': dailyKwh, 'uiValue': dailyKwhStr})
@@ -270,7 +207,7 @@ class Plugin(indigo.PluginBase):
 		# Now go find all the active channels on the Dashbox and add them
 		hostName = self.pluginPrefs["address"]
 		dbPassword = self.pluginPrefs["password"]
-		if hostName is None or hostName == "" or password is None or password == "":
+		if hostName is None or hostName == "" or dbPassword is None or dbPassword == "":
 			return
 
 		parser = HTMLParser()
