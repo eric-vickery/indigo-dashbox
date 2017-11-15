@@ -2,7 +2,7 @@
 <!-- Copyright (C)2017 Eric Vickery. -->
 <MenuItems>
     <MenuItem id="reloadMenu">
-		<Name>Reload devices</Name>
-        <CallbackMethod>reloadDevices</CallbackMethod>
+		<Name>Toggle Debugging</Name>
+        <CallbackMethod>toggleDebugging</CallbackMethod>
 	</MenuItem>
 </MenuItems>

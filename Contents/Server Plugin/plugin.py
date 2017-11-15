@@ -17,30 +17,26 @@ import requests
 kOnlineState = "online"
 kOfflineState = "offline"
 
-device_dict = {}
-parser = HTMLParser()
-conn = pg8000.connect(user="dbbackup", password="universe", database="brultech_dash", host="dashbox.vickeryranch.com")
-cursor = conn.cursor()
-cursor.execute("SELECT channel_id, channel_name, pulse_unit, chnum, ctype, devices.device_id, netchannel_id FROM channel INNER JOIN devices ON channel.device_id = devices.device_id WHERE hide = 0 ORDER BY channel_id ASC")
-results = cursor.fetchall()
-for row in results:
-	device_dict[channel_id] = 
-	channel_id, channel_name, pulse_unit, chnum, cttype, device_id, netchannel_id = row
-	print("id = %d, name = %s, Type = %d" % (channel_id, parser.unescape(channel_name), row[4]))
-print(results)
-cursor.close()
-conn.close()
+kChannelId = "channelId"
+kChannelName = "channelName"
+kPulseUnit = "pulseUnit"
+kChannelNumber = "channelNumber"
+kChannelType = "channelType"
+kDeviceId = "deviceId"
+kNetchannelId = "netchannelId"
 
-result = requests.get("http://dashbox.vickeryranch.com/index.php/pages/search/all/0")
-print result.json()["channels"]
 
-result = requests.get("http://dashbox.vickeryranch.com/index.php/pages/search/getWattVals")
-power_data = result.json()
+kPowerMeterDevice = "powerMeterDevice"
+kTemperatureDevice = "temperatureSensorDevice"
+kPulseSensorDevice = "pulseSensorDevice"
+kVoltageDevice = "voltageSensorDevice"
 
-for device in power_data:
-	print device
-	for reading in power_data[device]["watts"]:
-		print reading
+kChannelTypeToDeviceType = {
+	0: kPowerMeterDevice,
+	1: kTemperatureDevice,
+	2: kPulseSensorDevice,
+	3: kVoltageDevice
+}
 
 
 class Plugin(indigo.PluginBase):
@@ -49,12 +45,6 @@ class Plugin(indigo.PluginBase):
 		indigo.PluginBase.__init__(self, pluginId, pluginDisplayName, pluginVersion, pluginPrefs)
 
 		self.debug = False
-		self.inclusionMode = False
-
-		self.connection = None
-		self.connectionAttempts = 0
-
-		self.devices = indigo.Dict()
 
 	def __del__(self):
 		indigo.PluginBase.__del__(self)
@@ -65,57 +55,120 @@ class Plugin(indigo.PluginBase):
 		self.debugLog(u"Connecting...")
 
 		self.address = self.pluginPrefs["address"]
-		self.unit = self.pluginPrefs.get("unit", "M")
 
 		result = False
-
-		while not result and self.connectionAttempts < 6:
-			result = self.openConnection()
-
-			self.sleep(kWorkerSleep)
-
-		if not result:
-			self.errorLog(u"permanently failed connecting Gateway at address: %s" % self.address)
-
-		self.loadDevices()
 
 	def shutdown(self):
 		self.debugLog(u"Disconnecting...")
 
-		if self.connection:
-			self.connection.close()
+	def refreshStatesFromHardware(self, logRefresh):
+		indexedPowerData = {}
 
-	def _refreshStatesFromHardware(self, dev, logRefresh):
-		# As an example here we update the current power (Watts) to a random
-		# value, and we increase the kWh by a smidge.
+		host = self.pluginPrefs["address"]
+		if host is None or host == "":
+			return indexedPowerData
+
+		try:
+			result = requests.get("http://" + host + "/index.php/pages/search/all/0", timeout=1.5)
+			if result.status_code == requests.codes.ok:
+				activeChannels = result.json()["channels"]
+
+				result = requests.get("http://" + host + "/index.php/pages/search/getWattVals", timeout=1.5)
+				if result.status_code == requests.codes.ok:
+					powerData = result.json()
+
+					index = 0
+					for device in powerData:
+						for reading in powerData[device]["watts"]:
+							indexedPowerData[int(activeChannels[index])] = reading
+							index += 1
+
+					if logRefresh:
+						indigo.server.log(u"Queried Dashbox successfully")
+
+		except requests.exceptions.RequestException:
+			pass
+
+		return indexedPowerData
+
+	def getDailyUsage(self, channelId):
+		host = self.pluginPrefs["address"]
+		if host is None or host == "":
+			return 0.0
+
+		key = None
+		totalDailyUsage = 0.0
+		result = requests.post("http://" + host + "/index.php/pages/load/loadBarGraph", data={"chans": "%s,-1,-1" % (channelId)})
+		if result.status_code == requests.codes.ok:
+			usage = result.json()
+			for usageRecord in usage:
+				if key is None:
+					for keyIndex in usageRecord:
+						if keyIndex != "date":
+							key = keyIndex
+				hourlyUsage = 0.0
+				try:
+					hourlyUsage = usageRecord[key]
+				except:
+					pass
+				totalDailyUsage += hourlyUsage
+			return totalDailyUsage
+		else:
+			return 0.0
+
+	def refreshDeviceFromData(self, dev, powerData, logRefresh):
+
 		keyValueList = []
-		if "curEnergyLevel" in dev.states:
-			simulateWatts = random.randint(0, 500)
-			simulateWattsStr = "%d W" % (simulateWatts)
-			if logRefresh:
-				indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "power load", simulateWattsStr))
-			keyValueList.append({'key': 'curEnergyLevel', 'value': simulateWatts, 'uiValue': simulateWattsStr})
 
-		if "accumEnergyTotal" in dev.states:
-			simulateKwh = dev.states.get("accumEnergyTotal", 0) + 0.001
-			simulateKwhStr = "%.3f kWh" % (simulateKwh)
-			if logRefresh:
-				indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "energy total", simulateKwhStr))
-			keyValueList.append({'key': 'accumEnergyTotal', 'value': simulateKwh, 'uiValue': simulateKwhStr})
+		if dev.deviceTypeId == kTemperatureDevice:
+			if dev.sensorValue is not None:
+				exampleTempFloat = float(powerData[dev.pluginProps[kChannelId]])
+				exampleTempStr = "%.1f °F" % (exampleTempFloat)
+
+				keyValueList.append({'key': 'sensorValue', 'value': exampleTempFloat, 'uiValue': exampleTempStr})
+				dev.updateStateImageOnServer(indigo.kStateImageSel.TemperatureSensor)
+
+		elif dev.deviceTypeId == kVoltageDevice:
+			if dev.sensorValue is not None:
+				exampleTempFloat = float(powerData[dev.pluginProps[kChannelId]])
+				exampleTempStr = "%.1f V" % (exampleTempFloat)
+
+				keyValueList.append({'key': 'sensorValue', 'value': exampleTempFloat, 'uiValue': exampleTempStr})
+
+		elif dev.deviceTypeId == kPulseSensorDevice:
+			if dev.sensorValue is not None:
+				exampleTemp = int(powerData[dev.pluginProps[kChannelId]])
+				exampleTempStr = "%d Pulses" % (exampleTemp)
+
+				keyValueList.append({'key': 'sensorValue', 'value': exampleTemp, 'uiValue': exampleTempStr})
+
+		elif dev.deviceTypeId == kPowerMeterDevice:
+			if "curEnergyLevel" in dev.states:
+				watts = int(powerData[dev.pluginProps[kChannelId]])
+				wattsStr = "%d W" % (watts)
+				if logRefresh:
+					indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "power load", wattsStr))
+				keyValueList.append({'key': 'curEnergyLevel', 'value': watts, 'uiValue': wattsStr})
+
+			if "accumEnergyTotal" in dev.states:
+				dailyKwh = self.getDailyUsage(dev.pluginProps[kChannelId])
+				dailyKwhStr = "%.3f kWh" % (dailyKwh)
+				if logRefresh:
+					indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "energy total", dailyKwhStr))
+				keyValueList.append({'key': 'accumEnergyTotal', 'value': dailyKwh, 'uiValue': dailyKwhStr})
 
 		dev.updateStatesOnServer(keyValueList)
 
 	def runConcurrentThread(self):
 		try:
 			while True:
+				powerData = self.refreshStatesFromHardware(False)
 				for dev in indigo.devices.iter("self"):
 					if not dev.enabled or not dev.configured:
+						indigo.server.log(u"Device not enabled")
 						continue
 
-					# Plugins that need to poll out the status from the meter
-					# could do so here, then broadcast back the new values to the
-					# Indigo Server.
-					self._refreshStatesFromHardware(dev, False)
+					self.refreshDeviceFromData(dev, powerData, False)
 
 				self.sleep(4)
 		except self.StopThread:
@@ -127,22 +180,7 @@ class Plugin(indigo.PluginBase):
 
 	def deviceStopComm(self, indigoDevice):
 		self.debugLog(u"Device stopped: \"%s\" %s" % (indigoDevice.name, indigoDevice.id))
-
-		try:
-			deviceId = indigoDevice.id
-
-			if deviceId not in indigo.devices:
-				properties = indigoDevice.pluginProps
-
-				address = self.getAddress(address=properties["address"])
-
-				device = self.devices[address]
-
-				device["id"] = ""
-
-				self.devices[address] = device
-		except Exception, (ErrorMessage):
-			pass
+		pass
 
 	########################################
 	# DeviceFactory methods (specified in Devices.xml)
@@ -163,21 +201,64 @@ class Plugin(indigo.PluginBase):
 		return device_list
 
 	def addIndigoDevices(self, valuesDict, deviceIdList):
-		try:
-			nodeId = kNoneNodeId
+		# First remove all the devices we have added
+		self.removeAllDevices(valuesDict, deviceIdList)
 
+		# Now go find all the active channels on the Dashbox and add them
+		hostName = self.pluginPrefs["address"]
+		dbPassword = self.pluginPrefs["password"]
+		if hostName is None or hostName == "" or dbPassword is None or dbPassword == "":
+			return
+
+		parser = HTMLParser()
+		conn = pg8000.connect(user="dbbackup", password=dbPassword, database="brultech_dash", host=hostName)
+		cursor = conn.cursor()
+		cursor.execute("SELECT channel_id, channel_name, pulse_unit, chnum, ctype, devices.device_id, netchannel_id FROM channel INNER JOIN devices ON channel.device_id = devices.device_id WHERE hide = 0 ORDER BY channel_id ASC")
+		results = cursor.fetchall()
+		device_dict = {}
+		for row in results:
+			channel_id, channel_name, pulse_unit, chnum, ctype, device_id, netchannel_id = row
+			deviceType = kChannelTypeToDeviceType[ctype]
+
+			newdev = indigo.device.create(indigo.kProtocol.Plugin, deviceTypeId=deviceType)
+			newdev.model = "Dashbox Channel"
+			newdev.subModel = parser.unescape(channel_name)
+			newdev.name = parser.unescape(channel_name)
+			newdev.remoteDisplay = True
+			newdev.replaceOnServer()
+
+			device_dict["channelId"] = channel_id
+			device_dict["channelName"] = parser.unescape(channel_name)
+			device_dict["pulseUnit"] = pulse_unit
+			device_dict["channelNumber"] = chnum
+			device_dict["channelType"] = ctype
+			device_dict["deviceId"] = device_id
+			device_dict["netchannelId"] = netchannel_id
+			if deviceType == kTemperatureDevice or deviceType == kVoltageDevice or deviceType == kPulseSensorDevice:
+				device_dict["SupportsOnState"] = False
+				device_dict["SupportsSensorValue"] = True
+				device_dict["SupportsStatusRequest"] = False
+				device_dict["AllowOnStateChange"] = False
+				device_dict["AllowSensorValueChange"] = False
+			else:
+				device_dict["SupportsEnergyMeter"] = True
+				device_dict["SupportsEnergyMeterCurPower"] = True
+				device_dict["SupportsSensorValue"] = True
+				device_dict["SupportsStatusRequest"] = False
+				device_dict["AllowSensorValueChange"] = False
+			newdev.replacePluginPropsOnServer(device_dict)
+
+		cursor.close()
+		conn.close()
+
+		return valuesDict
+
+	def removeAllDevices(self, valuesDict, devIdList):
+		for devId in devIdList:
 			try:
-				nodeId = int(valuesDict["selecteddevice"])
-
-				self.debugLog(u"add device %s" % nodeId)
-			except Exception, (ErrorMessage):
-				pass
-
-			if nodeId > kNoneNodeId:
-				self.addIndigoChildren(nodeId)
-		except Exception, (ErrorMessage):
-			pass
-
+				indigo.device.delete(devId)
+			except:
+				pass  # delete doesn't allow (throws) on root elem
 		return valuesDict
 
 	def getDeviceFactoryUiValues(self, devIdList):
@@ -301,194 +382,6 @@ class Plugin(indigo.PluginBase):
 
 			if "serial" in ErrorMessage:
 				self.connection = None
-
-	def sendCommand(self, nodeId, childId, messageType, ack, itemType, value, uiValue):
-		address = self.getAddress(nodeId=nodeId, childId=childId)
-
-		device = self.getDevice(address=address)
-
-		indigoDevice = None
-
-		messageType = self.getMessageNumber(messageType)
-
-		try:
-			command = "%s;%s;%s;%s;%s;%s" % (nodeId, childId, messageType, ack, itemType, value)
-
-			self.debugLog(u"command %s" % command)
-
-			if device and device["id"]:
-				indigoDevice = indigo.devices[device["id"]]
-
-			if self.connection and self.connection.writable:
-				self.connection.write(command + "\n")
-
-				if indigoDevice:
-					indigo.server.log(u"sent '%s' %s " % (indigoDevice.name, uiValue))
-				else:
-					indigo.server.log(u"sent '%s:%s' %s " % (nodeId, childId, uiValue))
-
-				return True
-			else:
-				raise Exception("Can't write to serial port")
-		except Exception, (ErrorMessage):
-			if indigoDevice:
-				self.errorLog(u"send '%s' %s failed: %s" % (indigoDevice.name, uiValue, ErrorMessage))
-			else:
-				self.errorLog(u"send '%s:%s' %s failed: %s" % (nodeId, childId, uiValue, ErrorMessage))
-
-		return False
-
-	########################################
-	# Device methods
-	########################################
-	def getDevice(self, indigoDevice=None, nodeId=None, childId=None, address=None):
-		if not address:
-			address = self.getAddress(nodeId=nodeId, childId=childId)
-		else:
-			address = self.getAddress(address=address)
-
-		if nodeId == kNoneNodeId or childId == kNoneChildId or nodeId == kMaxNodeId or childId == kMaxChildId:
-			self.debugLog(u"get device %s:%s skipped" % nodeId, childId)
-
-			return None
-
-		self.debugLog(u"get device %s" % address)
-
-		if address not in self.devices:
-			if not nodeId:
-				identifiers = self.getIdentifiers(address)
-
-				nodeId = identifiers[0]
-				childId = identifiers[1]
-
-			device = self.createDevice(nodeId, childId, address)
-
-			self.sendInternalCommand(nodeId, childId, "VERSION", "Get Version")
-
-			if nodeId != kGatewayNodeId:
-				self.sendInternalCommand(nodeId, childId, "SKETCH_NAME", "Get Sketch Name")
-		else:
-			device = self.devices[address]
-
-			if indigoDevice:
-				properties = {"id": indigoDevice.id}
-
-				self.updateDevice(device, address, properties)
-
-		if address in self.devices:
-			return self.devices[address]
-		else:
-			return None
-
-	def createDevice(self, nodeId, childId, address):
-		device = indigo.Dict()
-
-		self.debugLog(u"create device %s" % address)
-
-		if nodeId == 0:
-			device["type"] = self.getSensorNumber("ARDUINO_NODE")
-		else:
-			device["type"] = kNoneType
-
-		device["version"] = ""
-		device["id"] = ""
-		device["model"] = self.getSensorShortName(device["type"])
-		device["modelVersion"] = ""
-
-		self.devices[address] = device
-
-		self.pluginPrefs["devices"] = self.devices
-
-		self.updateNodeIds(nodeId, False)
-
-		self.debugLog(u"now available device[%s] %s %s" % (address, device["type"], device["model"]))
-
-	def updateDevice(self, device, address, properties):
-		if not device:
-			return
-
-		updated = False
-
-		for property in properties:
-			if property not in device:
-				self.debugLog(u"update device %s created %s = '%s'" % (address, property, properties[property]))
-
-				device[property] = properties[property]
-
-				updated = True
-			elif device[property] != properties[property]:
-				self.debugLog(u"update device %s updated %s = '%s'" % (address, property, properties[property]))
-
-				device[property] = properties[property]
-
-				updated = True
-
-		if updated:
-			self.devices[address] = device
-
-			self.pluginPrefs["devices"] = self.devices
-
-		return updated
-
-	def updateNodeIds(self, nodeId, value):
-		if nodeId == kMaxNodeId:
-			return
-
-		id = "N%s" % nodeId
-
-		if self.nodeIds[id] != value:
-			self.nodeIds[id] = value
-
-		self.pluginPrefs["nodeIds"] = self.nodeIds
-
-	def updateState(self, indigoDevice, itemType, payload):
-		if not indigoDevice:
-			return
-
-		return ""
-
-	def updateProperties(self, indigoDevice, properties):
-		if not indigoDevice:
-			return
-
-		indigoProperties = indigoDevice.pluginProps
-
-		for property in properties:
-			if hasattr(indigoProperties, property) and indigoProperties[property] == properties[property]:
-				del properties[property]
-
-		if len(properties) > 0:
-			indigoProperties.update(properties)
-			indigoDevice.replacePluginPropsOnServer(indigoProperties)
-
-	def loadDevices(self):
-		if "devices" in self.pluginPrefs:
-			self.devices = self.pluginPrefs["devices"]
-
-		if "nodeIds" in self.pluginPrefs:
-			self.nodeIds = self.pluginPrefs["nodeIds"]
-		else:
-			self.setupNodeIds()
-
-	########################################
-	# Start connecting
-	########################################
-	def openConnection(self):
-		if self.address:
-			self.connection = self.openSerial("com.it2be.indigo.mysensors", portUrl=self.address, baudrate=kBaudrate, timeout=0)
-		else:
-			self.address = "undefined"
-
-		if self.connection:
-			self.connectionAttempts = 0
-
-			indigo.server.log(u"connected to Gateway on %s" % self.address)
-
-			return True
-		else:
-			self.connectionAttempts = self.connectionAttempts + 1
-
-			return False
 
 	########################################
 	# Menu Methods

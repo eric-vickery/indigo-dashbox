@@ -18,7 +18,7 @@ When you have Indigo installed the plugin folder will show as a single file (a p
 When you doubleclick on the file you will automatically open Indigo (or bring it to the front) and you will be asked if you want to install and enable it.
 
 ### Configuring the Dashbox
-You will need to set a password for the batabase backup (if you haven't already). The database backup user is used by the plugin to retreive some of the information about the channels. This is readonly and nothing is ever written to the Dashbox from teh plugin. You set the password by going to Settings->System->Backup Settings
+You will need to set a password for the database backup (if you haven't already) on the Dashbox. The database backup user is used by the plugin to retreive information about the channels from the Dashbox. This is read-only and plugin never writes anything to the Dashbox. You set the password by going to Settings->System->Backup Settings on the Dashbox.
 
 ### Connect to the Dashbox
 When enabling the plugin you will need to provide the following:
@@ -26,20 +26,10 @@ When enabling the plugin you will need to provide the following:
 * Password for the backup user (configured above)
 
 ### Include devices
-All the channels that are not hidden on the Dashbox will have devices created for them when you enable the plugin. The names will be the names of the channels as defined on the Dashbox. If you change what channels are enabled on the Dashbox you will need to reload the devices (see below).
+All the channels that are not hidden on the Dashbox will have devices created for them when you add a device. The names will be the names of the channels as defined on the Dashbox. If you change which channels are enabled on the Dashbox you will need to delete and reload the devices.
 
 ### Using triggers, actions etc.
-TBD
-When you are at this point the device behaves similar to what you are used to in Indigo so I am not going to spend many more words than necessary here. Triggers, actions etc. are defined based on what is available for a sensor in MySensors. So this is pretty standard stuff. When you miss something that is available in MySensors but not in the plugin you can either let me know or fork the master and add it yourself (and commit the changes so that I can review and add them).
-
-### Menu Items
-The following menu items are available:
-
-##### Reload Devices
-This will delete all the devices created by the plugin.
-Three words of advice here:
-* Don't do this unless you are asked to when you are unsure.
-* If the channel names were changed on the Dashbox this could cause Triggers and actions to quit working correctly.
+Triggers and Actions behave similar to what you are used to in Indigo.
 
 ### FreeBSD License
 Copyright (c) 2017, Eric Vickery
